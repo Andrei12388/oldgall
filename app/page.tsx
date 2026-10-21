@@ -2,7 +2,7 @@
 
 import { Logo, LogoIcon } from '@/components/logo'
 import { products, type Product } from '@/data/products'
-import { ArrowLeft, ArrowRight, Search, Sparkles, Star } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Search, Mail, Phone } from 'lucide-react'
 import Link from 'next/link'
 import { useMemo, useRef, useState, type SVGProps } from 'react'
 
@@ -16,6 +16,24 @@ function FacebookIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
       <path d="M13.5 22v-8h2.7l.4-3.2h-3.1V7.2c0-.9.3-1.6 1.7-1.6H17V2.5c-.3 0-1.3-.2-2.4-.2-2.4 0-4 1.5-4 4.3v2.2H8v3.2h2.6v8h2.9Z" />
+    </svg>
+  )
+}
+
+function InstagramIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <rect x="3" y="3" width="18" height="18" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17.5" cy="6.5" r="0.75" fill="currentColor" stroke="none" />
     </svg>
   )
 }
@@ -562,35 +580,65 @@ const handleVideoEnded = () => {
           }}
         />
 
-        <footer className="mt-12 border-t border-zinc-200 bg-[#f4ece4]">
-          <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
-            <div>
-              <p className="text-xl font-black tracking-tight text-zinc-900">Oldies Gallery</p>
-              <p className="mt-1 text-sm text-zinc-600">Curated thrifted finds for everyday style.</p>
-            </div>
+        
+<footer className="mt-12 border-t border-zinc-200 bg-[#f4ece4]">
+  <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+    <div>
+      <p className="text-xl font-black tracking-tight text-zinc-900">
+        OLDIES GALLERY
+      </p>
+      <p className="mt-1 text-sm text-zinc-600">
+        Curated thrifted finds for everyday style.
+      </p>
+    </div>
 
-            <div className="flex items-center gap-3">
-              <a
-                href="https://www.facebook.com"
-                target="_blank"
-                rel="noreferrer"
-                aria-label="Facebook"
-                className="flex h-11 w-11 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-700 transition hover:-translate-y-0.5 hover:text-[#1877F2]"
-              >
-                <FacebookIcon className="h-5 w-5" />
-              </a>
-              <a
-                href="https://www.tiktok.com"
-                target="_blank"
-                rel="noreferrer"
-                aria-label="TikTok"
-                className="flex h-11 w-11 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-700 transition hover:-translate-y-0.5 hover:text-black"
-              >
-                <TikTokIcon className="h-5 w-5" />
-              </a>
-            </div>
-          </div>
-        </footer>
+    <div className="flex flex-row items-start gap-10 lg:items-end">
+     
+
+      {/* Contact Information */}
+      <div className="flex flex-col gap-2 text-sm text-zinc-600">
+        <a
+          href="mailto:oldies.gallery@gmail.com"
+          className="flex items-center gap-2 transition hover:text-zinc-900"
+        >
+          <Mail className="h-4 w-4 shrink-0" />
+          <span>oldies.gallery@gmail.com</span>
+        </a>
+
+        <a
+          href="tel:+639384268015"
+          className="flex items-center gap-2 transition hover:text-zinc-900"
+        >
+          <Phone className="h-4 w-4 shrink-0" />
+          <span>09384268015</span>
+        </a>
+      </div>
+       {/* Social Media Icons */}
+      <div className="flex items-center gap-3">
+        <a
+          href="https://www.instagram.com/oldies.gallery"
+          target="_blank"
+          rel="noreferrer"
+          aria-label="Instagram"
+          className="flex h-11 w-11 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-700 transition hover:-translate-y-0.5 hover:text-[#E1306C]"
+        >
+          <InstagramIcon className="h-5 w-5" />
+        </a>
+
+        <a
+          href="https://www.facebook.com/Oldies.gallery"
+          target="_blank"
+          rel="noreferrer"
+          aria-label="Facebook"
+          className="flex h-11 w-11 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-700 transition hover:-translate-y-0.5 hover:text-[#1877F2]"
+        >
+          <FacebookIcon className="h-5 w-5" />
+        </a>
+      </div>
+    </div>
+  </div>
+</footer>
+
       </main>
     </div>
   )
