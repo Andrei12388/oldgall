@@ -9,6 +9,7 @@ type Product = {
   image: string
   images: string[]
   category: string
+  soldOut: boolean
   condition: string
   color: string
   size: string
@@ -29,6 +30,7 @@ export default function ProductPurchaseDetails({
 
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [copied, setCopied] = useState(false)
+  const isSoldOut = Boolean(product.soldOut)
 
   const originalPrice = product.originalPrice
 
@@ -149,6 +151,14 @@ export default function ProductPurchaseDetails({
           {product.category}
         </p>
 
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          {isSoldOut && (
+            <span className="rounded-full bg-red-600 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white">
+              Sold Out
+            </span>
+          )}
+        </div>
+
         <h1 className="mt-2 text-2xl font-bold leading-tight tracking-tight text-zinc-950 sm:text-3xl">
           {product.name}
         </h1>
@@ -188,10 +198,13 @@ export default function ProductPurchaseDetails({
         <div className="mt-6">
           <button
             type="button"
-            onClick={copyOrderDetails}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-black px-5 py-4 text-sm font-semibold text-white transition hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
+            onClick={isSoldOut ? undefined : copyOrderDetails}
+            disabled={isSoldOut}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-black px-5 py-4 text-sm font-semibold text-white transition hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black disabled:cursor-not-allowed disabled:bg-zinc-300"
           >
-            {copied ? (
+            {isSoldOut ? (
+              <>Sold Out — Item Unavailable</>
+            ) : copied ? (
               <>
                 <span aria-hidden="true">✓</span>
                 Order Details Copied!
@@ -215,8 +228,9 @@ export default function ProductPurchaseDetails({
           </button>
 
           <p className="mt-2 text-center text-xs leading-5 text-zinc-500">
-            Copy the details and paste them into our Facebook page chat
-            to place your order.
+            {isSoldOut
+              ? 'This item has already been sold and is no longer available.'
+              : 'Copy the details and paste them into our Facebook page chat to place your order.'}
           </p>
         </div>
 
@@ -236,6 +250,11 @@ export default function ProductPurchaseDetails({
             <div className="flex gap-2">
               <dt className="font-semibold text-zinc-900">Condition:</dt>
               <dd className="text-zinc-600">{product.condition}</dd>
+            </div>
+
+            <div className="flex gap-2">
+              <dt className="font-semibold text-zinc-900">Availability:</dt>
+              <dd className="text-zinc-600">{isSoldOut ? 'Sold out' : 'Available'}</dd>
             </div>
 
             <div className="flex gap-2">

@@ -39,6 +39,7 @@ export default async function ProductDetailPage({
             image: product.image,
             images: product.images,
             category: product.category,
+            soldOut: product.soldOut,
             condition: product.condition,
             color: product.color,
             size: product.size,

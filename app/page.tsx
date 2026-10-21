@@ -21,42 +21,30 @@ function TikTokIcon(props: SVGProps<SVGSVGElement>) {
     </svg>
   )
 }
+const collectionAccentMap: Record<string, string> = {
+  Accessories: 'from-amber-200 via-orange-100 to-white',
+  Bottoms: 'from-rose-200 via-pink-100 to-white',
+  Athleisure: 'from-zinc-200 via-stone-100 to-white',
+  Outerwear: 'from-emerald-200 via-teal-100 to-white',
+}
 
+const collectionGroups = Object.entries(
+  products.reduce<Record<string, Product[]>>((groups, product) => {
+    if (!groups[product.category]) {
+      groups[product.category] = []
+    }
 
-const collectionGroups = [
-  {
-    title: 'Pants',
-    subtitle: 'Relaxed essentials',
-    count: '18 pieces',
-    image:
-      'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80',
-    accent: 'from-amber-200 via-orange-100 to-white',
-  },
-  {
-    title: 'Dresses',
-    subtitle: 'Fresh and polished',
-    count: '12 pieces',
-    image:
-      'https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=900&q=80',
-    accent: 'from-rose-200 via-pink-100 to-white',
-  },
-  {
-    title: 'Hoodies',
-    subtitle: 'Cozy everyday picks',
-    count: '21 pieces',
-    image:
-      'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=900&q=80',
-    accent: 'from-zinc-200 via-stone-100 to-white',
-  },
-  {
-    title: 'Jackets',
-    subtitle: 'Layered statement looks',
-    count: '14 pieces',
-    image:
-      'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=900&q=80',
-    accent: 'from-emerald-200 via-teal-100 to-white',
-  },
-]
+    groups[product.category].push(product)
+    return groups
+  }, {}),
+).map(([category, categoryProducts]) => ({
+  title: category,
+  count: `${categoryProducts.filter((product) => !product.soldOut).length} piece${
+    categoryProducts.filter((product) => !product.soldOut).length === 1 ? '' : 's'
+  }`,
+  image: categoryProducts[0]?.image ?? '/images/product1/image (1).jpg',
+  accent: collectionAccentMap[category] ?? 'from-zinc-200 via-stone-100 to-white',
+}))
 
 function ProductCard({ product }: { product: Product }) {
   const imageCount = product.images.length
@@ -129,6 +117,12 @@ function ProductCard({ product }: { product: Product }) {
         <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-800 backdrop-blur">
           {product.condition}
         </span>
+
+        {product.soldOut && (
+          <span className="absolute right-3 top-3 rounded-full bg-red-600 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white shadow-sm">
+            Sold Out
+          </span>
+        )}
       </div>
 
       <div className="mt-4">
@@ -136,10 +130,11 @@ function ProductCard({ product }: { product: Product }) {
           <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
             {product.category}
           </p>
-          <div className="flex items-center gap-1 text-amber-500">
+         {/*  <div className="flex items-center gap-1 text-amber-500">
             <Star className="h-3.5 w-3.5 fill-current" />
             <span className="text-xs font-medium text-zinc-700">{product.rating}</span>
           </div>
+          */}
         </div>
 
         <h3 className="mt-2 text-lg font-bold leading-snug text-zinc-900">
@@ -430,9 +425,10 @@ const handleVideoEnded = () => {
 
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
             {collectionGroups.map((collection) => (
-              <article
+              <Link
                 key={collection.title}
-                className="group relative overflow-hidden rounded-[28px] border border-zinc-200 bg-white shadow-[0_16px_32px_rgba(15,23,42,0.05)]"
+                href={`/collections/${collection.title.toLowerCase().replace(/\s+/g, '-')}`}
+                className="group relative block overflow-hidden rounded-[28px] border border-zinc-200 bg-white shadow-[0_16px_32px_rgba(15,23,42,0.05)]"
               >
                 <div className={`absolute inset-0 bg-gradient-to-br ${collection.accent}`} />
                 <img
@@ -445,10 +441,8 @@ const handleVideoEnded = () => {
                 <div className="absolute inset-x-0 bottom-0 p-5 text-white">
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/80">{collection.count}</p>
                   <h3 className="mt-2 text-2xl font-black">{collection.title}</h3>
-                 {/*  <p className="mt-1 text-sm text-white/80">{collection.subtitle}</p> */}
-                  
                 </div>
-              </article>
+              </Link>
             ))}
           </div>
         </section>

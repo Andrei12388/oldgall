@@ -8,6 +8,7 @@ export type Product = {
   rating: number
   size: string
   category: string
+  soldOut: boolean
   image: string
   images: string[]
   description: string
@@ -45,6 +46,14 @@ const productImageMap: Record<number, string[]> = {
   ],
 }
 
+export const slugifyCategory = (category: string) =>
+  category
+    .toLowerCase()
+    .trim()
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+
 export const products: Product[] = [
   {
     id: 1,
@@ -56,6 +65,7 @@ export const products: Product[] = [
     rating: 4.8,
     size: 'One Size',
     category: 'Accessories',
+    soldOut: false,
     image: '/images/product1/image (1).jpg',
     images: productImageMap[1],
     description:
@@ -74,6 +84,7 @@ export const products: Product[] = [
     rating: 4.7,
     size: '30-38',
     category: 'Bottoms',
+    soldOut: false,
     image: '/images/product2/image (1).jpg',
     images: productImageMap[2],
     description:
@@ -92,6 +103,7 @@ export const products: Product[] = [
     rating: 4.6,
     size: '28-34',
     category: 'Bottoms',
+    soldOut: false,
     image: '/images/product3/image (1).jpg',
     images: productImageMap[3],
     description:
@@ -110,6 +122,7 @@ export const products: Product[] = [
     rating: 4.9,
     size: '28-36',
     category: 'Athleisure',
+    soldOut: false,
     image: '/images/product4/image (1).jpg',
     images: productImageMap[4],
     description:
@@ -128,6 +141,7 @@ export const products: Product[] = [
     rating: 4.8,
     size: 'M-XL',
     category: 'Outerwear',
+    soldOut: false,
     image: '/images/product5/image (1).jpg',
     images: productImageMap[5],
     description:
