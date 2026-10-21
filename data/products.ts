@@ -96,8 +96,8 @@ export const products: Product[] = [
   {
     id: 3,
     name: 'Nike Club Fleece Jogger Pants in Wine Red (Size 28-34)',
-    price: 800,
-    originalPrice: 1000,
+    price: 900,
+    originalPrice: 1200,
     condition: 'Good',
     color: 'Wine Red',
     rating: 4.6,

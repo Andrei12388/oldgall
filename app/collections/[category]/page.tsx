@@ -27,6 +27,12 @@ export default async function CollectionPage({
   )
   const availableCount = categoryProducts.filter((product) => !product.soldOut).length
 
+  const formatPrice = (price: number) =>
+    `₱${price.toLocaleString('en-PH', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`
+
   return (
     <main className="min-h-screen bg-[#f6f1ea] text-zinc-900">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -97,17 +103,22 @@ export default async function CollectionPage({
                   </div>
 
                   <div className="mt-4 flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.18em] text-zinc-400">
-                        Price
-                      </p>
-                      <p className="mt-1 text-lg font-bold text-zinc-950">
-                        ₱{product.price.toLocaleString('en-PH', {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
-                      </p>
-                    </div>
+       
+{/* Current price and optional original price */}
+<div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+  <p className="text-lg font-bold leading-tight text-zinc-950 sm:text-xl">
+    {formatPrice(product.price)}
+  </p>
+
+  {product.originalPrice !== undefined &&
+    product.originalPrice !== null &&
+    product.originalPrice > product.price && (
+      <p className="text-sm text-zinc-400 line-through">
+        {formatPrice(product.originalPrice)}
+      </p>
+    )}
+</div>
+
 
                     <Link
                       href={`/products/${product.id}`}
