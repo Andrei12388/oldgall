@@ -1,10 +1,10 @@
 'use client'
 
 import { Logo, LogoIcon } from '@/components/logo'
-import { products, type Product } from '@/data/products'
+import type { Product } from '@/data/products'
 import { ArrowLeft, ArrowRight, Search, Mail, Phone } from 'lucide-react'
 import Link from 'next/link'
-import { useMemo, useRef, useState, type SVGProps } from 'react'
+import { useEffect, useMemo, useRef, useState, type SVGProps } from 'react'
 
 const formatPrice = (price: number) =>
   `₱${price.toLocaleString('en-PH', {
@@ -45,30 +45,13 @@ function TikTokIcon(props: SVGProps<SVGSVGElement>) {
     </svg>
   )
 }
+
 const collectionAccentMap: Record<string, string> = {
   Accessories: 'from-amber-200 via-orange-100 to-white',
   Bottoms: 'from-rose-200 via-pink-100 to-white',
   Athleisure: 'from-zinc-200 via-stone-100 to-white',
   Outerwear: 'from-emerald-200 via-teal-100 to-white',
 }
-
-const collectionGroups = Object.entries(
-  products.reduce<Record<string, Product[]>>((groups, product) => {
-    if (!groups[product.category]) {
-      groups[product.category] = []
-    }
-
-    groups[product.category].push(product)
-    return groups
-  }, {}),
-).map(([category, categoryProducts]) => ({
-  title: category,
-  count: `${categoryProducts.filter((product) => !product.soldOut).length} piece${
-    categoryProducts.filter((product) => !product.soldOut).length === 1 ? '' : 's'
-  }`,
-  image: categoryProducts[0]?.image ?? '/images/product1/image (1).jpg',
-  accent: collectionAccentMap[category] ?? 'from-zinc-200 via-stone-100 to-white',
-}))
 
 function ProductCard({ product }: { product: Product }) {
   const imageCount = product.images.length
@@ -196,18 +179,76 @@ function ProductCard({ product }: { product: Product }) {
 }
 
 export default function HomePage() {
+  const [products, setProducts] = useState<Product[]>([])
   const [search, setSearch] = useState('')
   const sliderRef = useRef<HTMLDivElement | null>(null)
   const searchInputRef = useRef<HTMLInputElement | null>(null)
+
+  useEffect(() => {
+    let ignore = false
+
+    async function loadProducts() {
+      try {
+        const response = await fetch('/api/products', { cache: 'no-store' })
+        const data = (await response.json()) as { products?: Product[] }
+
+        if (!ignore) {
+          setProducts(data.products ?? [])
+        }
+      } catch {
+        if (!ignore) {
+          setProducts([])
+        }
+      }
+    }
+
+    void loadProducts()
+    return () => {
+      ignore = true
+    }
+  }, [])
+
+  const collectionGroups = useMemo(
+    () =>
+      Object.entries(
+        products.reduce<Record<string, Product[]>>((groups, product) => {
+          if (!groups[product.category]) {
+            groups[product.category] = []
+          }
+
+          groups[product.category].push(product)
+          return groups
+        }, {}),
+      ).map(([category, categoryProducts]) => ({
+        title: category,
+        count: `${categoryProducts.filter((product) => !product.soldOut).length} piece${
+          categoryProducts.filter((product) => !product.soldOut).length === 1 ? '' : 's'
+        }`,
+        image: categoryProducts[0]?.image ?? '/images/product1/image (1).jpg',
+        accent: collectionAccentMap[category] ?? 'from-zinc-200 via-stone-100 to-white',
+      })),
+    [products],
+  )
+
+  const newestProducts = useMemo(
+    () =>
+      [...products].sort((a, b) => {
+        const aDate = a.updatedAt ? new Date(a.updatedAt).getTime() : 0
+        const bDate = b.updatedAt ? new Date(b.updatedAt).getTime() : 0
+
+        return bDate - aDate || b.id - a.id
+      }).slice(0, 10),
+    [products],
+  )
 
   const filteredProducts = useMemo(() => {
     const searchTerm = search.trim().toLowerCase()
 
     if (!searchTerm) {
-      return products
+      return newestProducts
     }
 
-    return products.filter((product) => {
+    return newestProducts.filter((product) => {
       const haystack = [
         product.name,
         product.condition,
@@ -220,9 +261,9 @@ export default function HomePage() {
 
       return haystack.includes(searchTerm)
     })
-  }, [search])
+  }, [newestProducts, search])
 
-  const searchResults = search.trim() ? filteredProducts.slice(0, 5) : products.slice(0, 5)
+  const searchResults = search.trim() ? filteredProducts.slice(0, 5) : newestProducts.slice(0, 5)
 
   const scrollSlider = (direction: 'prev' | 'next') => {
     const cardWidth = 320
@@ -461,17 +502,6 @@ const handleVideoEnded = () => {
             </div>
 
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-2 shadow-sm">
-                <Search className="h-4 w-4 text-zinc-500" />
-                <input
-                  type="search"
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search by name, color, size..."
-                  aria-label="Search products"
-                  className="w-52 bg-transparent text-sm text-zinc-700 placeholder:text-zinc-400 focus:outline-none"
-                />
-              </div>
 
               <button
                 type="button"

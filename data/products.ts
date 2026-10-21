@@ -15,6 +15,8 @@ export type Product = {
   details: string[]
   paymentMethods: string[]
   orderDetails: string[]
+  createdAt?: string | Date
+  updatedAt?: string | Date
 }
 
 const productImageMap: Record<number, string[]> = {

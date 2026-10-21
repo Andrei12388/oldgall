@@ -1,12 +1,9 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { products, slugifyCategory } from '@/data/products'
+import type { Product } from '@/data/products'
+import { getDatabase } from '@/lib/mongodb'
 
-export function generateStaticParams() {
-  return Array.from(new Set(products.map((product) => slugifyCategory(product.category))))
-    .filter(Boolean)
-    .map((category) => ({ category }))
-}
+export const dynamic = 'force-dynamic'
 
 export default async function CollectionPage({
   params,
@@ -14,17 +11,19 @@ export default async function CollectionPage({
   params: Promise<{ category: string }>
 }) {
   const { category } = await params
-  const matchingCategory = products.find(
-    (product) => slugifyCategory(product.category) === category,
-  )?.category
+  const db = await getDatabase()
+  const categoryProducts = (await db
+    .collection('products')
+    .find({ category: { $regex: new RegExp(category.replace(/-/g, ' '), 'i') } })
+    .sort({ id: 1 })
+    .toArray()) as unknown as Product[]
+
+  const matchingCategory = categoryProducts[0]?.category
 
   if (!matchingCategory) {
     notFound()
   }
 
-  const categoryProducts = products.filter(
-    (product) => product.category === matchingCategory,
-  )
   const availableCount = categoryProducts.filter((product) => !product.soldOut).length
 
   const formatPrice = (price: number) =>

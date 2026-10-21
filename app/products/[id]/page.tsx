@@ -1,12 +1,11 @@
 
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { getProductById, products } from '@/data/products'
 import ProductPurchaseDetails from '@/components/ProductPurchaseDetails'
+import { getDatabase } from '@/lib/mongodb'
+import type { Product } from '@/data/products'
 
-export function generateStaticParams() {
-  return products.map((product) => ({ id: String(product.id) }))
-}
+export const dynamic = 'force-dynamic'
 
 export default async function ProductDetailPage({
   params,
@@ -14,7 +13,8 @@ export default async function ProductDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const product = getProductById(Number(id))
+  const db = await getDatabase()
+  const product = (await db.collection('products').findOne({ id: Number(id) })) as Product | null
 
   if (!product) {
     notFound()
