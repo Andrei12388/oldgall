@@ -4,7 +4,7 @@ import { Logo, LogoIcon } from '@/components/logo'
 import { products, type Product } from '@/data/products'
 import { ArrowLeft, ArrowRight, Search, Sparkles, Star } from 'lucide-react'
 import Link from 'next/link'
-import { useEffect, useMemo, useRef, useState, type SVGProps } from 'react'
+import { useMemo, useRef, useState, type SVGProps } from 'react'
 
 const formatPrice = (price: number) =>
   `₱${price.toLocaleString('en-PH', {
@@ -179,15 +179,8 @@ function ProductCard({ product }: { product: Product }) {
 
 export default function HomePage() {
   const [search, setSearch] = useState('')
-  const [isSearchOpen, setIsSearchOpen] = useState(false)
   const sliderRef = useRef<HTMLDivElement | null>(null)
   const searchInputRef = useRef<HTMLInputElement | null>(null)
-
-  useEffect(() => {
-    if (isSearchOpen) {
-      searchInputRef.current?.focus()
-    }
-  }, [isSearchOpen])
 
   const filteredProducts = useMemo(() => {
     const searchTerm = search.trim().toLowerCase()
@@ -258,106 +251,119 @@ const handleVideoEnded = () => {
 
   return (
     <div className="min-h-screen bg-[#f6f1ea] text-zinc-900">
-      <header className="bg-[#f7f2ec]">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between border-b border-[#e8ddd0] py-5">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-900 text-sm font-bold text-white">
-                <Logo className="h-50 w-50" />
-              </div>
-              <div>
-                <p className="text-lg font-black tracking-tight">Oldies Gallery</p>
-                <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">
-                  Levi Selga
-                </p>
-              </div>
-            </div>
+      
+<header className="sticky top-0 z-50 border-b border-[#e8ddd0] bg-[#f7f2ec]/95 shadow-sm backdrop-blur-md">
+  <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 py-4 lg:flex-nowrap">
 
-            <nav className="hidden items-center gap-8 text-sm font-medium text-zinc-700 md:flex">
-              <a href="#">Home</a>
-              <a href="#new-arrivals">New Arrivals</a>
-              <a href="#collections">Collections</a>
-              <a href="#about">About</a>
-            </nav>
-
-            <div className="relative flex items-center gap-3">
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setIsSearchOpen((open) => !open)}
-                  className="rounded-full border border-zinc-200 bg-white p-2.5 shadow-sm transition hover:-translate-y-0.5"
-                  aria-label="Toggle search"
-                >
-                  <Search className="h-4 w-4" />
-                </button>
-
-                {isSearchOpen && (
-                  <div className="absolute right-0 top-full z-40 mt-3 w-[min(420px,calc(100vw-2rem))] overflow-hidden rounded-[22px] border border-zinc-200 bg-white shadow-[0_24px_60px_rgba(15,23,42,0.14)]">
-                    <div className="flex items-center gap-3 border-b border-zinc-100 px-4 py-3">
-                      <Search className="h-4 w-4 text-zinc-500" />
-                      <input
-                        ref={searchInputRef}
-                        type="search"
-                        value={search}
-                        onChange={(event) => setSearch(event.target.value)}
-                        placeholder="Search products, colors, sizes..."
-                        aria-label="Search products in the header"
-                        className="w-full bg-transparent text-sm text-zinc-700 placeholder:text-zinc-400 focus:outline-none"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setIsSearchOpen(false)}
-                        className="rounded-full border border-zinc-200 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500"
-                        aria-label="Close search"
-                      >
-                        Esc
-                      </button>
-                    </div>
-
-                    <div className="max-h-[320px] overflow-y-auto p-2">
-                      {search.trim() && filteredProducts.length === 0 ? (
-                        <div className="px-3 py-5 text-sm text-zinc-500">
-                          No matches for “{search.trim()}”. Try a different color, size, or category.
-                        </div>
-                      ) : (
-                        searchResults.map((product) => (
-                          <Link
-                            key={product.id}
-                            href={`/products/${product.id}`}
-                            onClick={() => setIsSearchOpen(false)}
-                            className="flex items-center gap-3 rounded-2xl px-3 py-2 text-left transition hover:bg-zinc-100"
-                          >
-                            <img
-                              src={product.image}
-                              alt={product.name}
-                              className="h-14 w-14 rounded-xl object-cover"
-                            />
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm font-semibold text-zinc-800">{product.name}</p>
-                              <div className="mt-1 flex items-center justify-between gap-3 text-[11px] text-zinc-500">
-                                <span>{product.category}</span>
-                                <span className="font-semibold text-zinc-800">{formatPrice(product.price)}</span>
-                              </div>
-                            </div>
-                          </Link>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <button className="rounded-full bg-zinc-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-800">
-                Shop now
-              </button>
-            </div>
-          </div>
+      {/* Logo and store name */}
+      <Link href="/" className="flex shrink-0 items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-900 text-white">
+          <Logo className="h-10 w-10" />
         </div>
-      </header>
+
+        <p className="text-base font-black tracking-tight sm:text-lg">
+          OLDIES GALLERY
+        </p>
+      </Link>
+
+      {/* Navigation */}
+      <nav className="order-3 flex w-full items-center justify-center gap-6 text-xs font-medium text-zinc-700 sm:gap-8 sm:text-sm lg:order-none lg:w-auto lg:flex-1">
+        <a href="#" className="transition hover:text-black">
+          Home
+        </a>
+        <a href="#new-arrivals" className="transition hover:text-black">
+          New Arrivals
+        </a>
+        <a href="#collections" className="transition hover:text-black">
+          Collections
+        </a>
+      </nav>
+
+      {/* Always-visible, wider search bar */}
+      <div className="relative order-2 w-full sm:w-[360px] lg:order-none lg:w-[400px] lg:shrink-0 xl:w-[440px]">
+        <div className="flex h-11 items-center gap-3 rounded-full border border-zinc-200 bg-white px-4 shadow-sm transition focus-within:border-zinc-400 focus-within:ring-2 focus-within:ring-zinc-200">
+          <Search className="h-5 w-5 shrink-0 text-zinc-500" />
+
+          <input
+            ref={searchInputRef}
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search products, colors, sizes..."
+            aria-label="Search products"
+            className="min-w-0 flex-1 bg-transparent text-sm text-zinc-800 outline-none placeholder:text-zinc-400"
+          />
+
+          {search && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearch('')
+                searchInputRef.current?.focus()
+              }}
+              className="shrink-0 rounded-full px-2 py-1 text-xs font-medium text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900"
+              aria-label="Clear search"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+
+        {/* Search suggestions */}
+        {search.trim() && (
+          <div className="absolute inset-x-0 top-full z-[60] mt-2 max-h-[min(360px,60vh)] overflow-y-auto rounded-2xl border border-zinc-200 bg-white p-2 shadow-[0_24px_60px_rgba(15,23,42,0.16)]">
+
+            {filteredProducts.length === 0 ? (
+              <div className="px-3 py-5 text-sm text-zinc-500">
+                No matches for "{search.trim()}". Try another color, size, or category.
+              </div>
+            ) : (
+              filteredProducts.slice(0, 5).map((product) => (
+                <Link
+                  key={product.id}
+                  href={`/products/${product.id}`}
+                  className="flex items-center gap-3 rounded-xl px-3 py-2 transition hover:bg-zinc-100"
+                >
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    className="h-12 w-12 shrink-0 rounded-lg object-cover"
+                  />
+
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-zinc-800">
+                      {product.name}
+                    </p>
+
+                    <p className="mt-1 text-xs text-zinc-500">
+                      {product.category}
+                    </p>
+                  </div>
+
+                  <span className="shrink-0 text-sm font-bold text-zinc-900">
+                    {formatPrice(product.price)}
+                  </span>
+                </Link>
+              ))
+            )}
+          </div>
+        )}
+      </div>
+
+    </div>
+  </div>
+</header>
 
       <main>
         <section className="bg-[#f6f1ea] px-4 pb-8 pt-6 sm:px-6 lg:px-8">
+          <div className='w-full h-5 flex text-center content-center justify-center align-center mb-2'>
+              <div className='w-310 h-5 bg-gray-700 text-center content-center justify-center align-center text-xs font-semibold text-white'>
+               FREE SHIPPING ON ALL ORDERS!
+             </div>
+          </div>
           <div className="mx-auto max-w-7xl overflow-hidden rounded-[30px] bg-[#ebe1d4] shadow-[0_30px_80px_rgba(26,18,12,0.12)]">
+            
             <div className="grid items-center gap-8 px-6 py-8 md:grid-cols-2 md:px-12 lg:px-16 lg:py-16">
               <div>
                 <p className="mb-4 inline-flex rounded-full border border-[#c7b29a] bg-[#f9f3ec] px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-zinc-700">
@@ -374,12 +380,9 @@ const handleVideoEnded = () => {
                     href="#new-arrivals"
                     className="rounded-full bg-zinc-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800"
                   >
-                    Shop here
+                    Shop Now
                   </a>
-                  <div className="flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700">
-                    <Sparkles className="h-4 w-4 text-amber-500" />
-                    Free shipping on all orders
-                  </div>
+                  
                 </div>
               </div>
 
@@ -429,7 +432,10 @@ const handleVideoEnded = () => {
         </section>
 
 
-        <section id="new-arrivals" className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <section
+  id="new-arrivals"
+  className="scroll-mt-28 mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8"
+>
           <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-500">Trending now</p>
@@ -485,7 +491,10 @@ const handleVideoEnded = () => {
           )}
         </section>
 
-        <section id="collections" className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <section
+  id="collections"
+  className="scroll-mt-28 mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8"
+>
           <div className="mb-6 flex items-end justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-500">Shop by style</p>
