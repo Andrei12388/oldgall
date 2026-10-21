@@ -71,7 +71,7 @@ export const products: Product[] = [
     description:
       'A statement accessory with a sleek all-over Swoosh detail, designed for everyday carrying and easy styling.',
     details: ['Premium pre-loved condition', 'Authentic Nike style', 'Lightweight and functional', 'Perfect for daily errands'],
-    paymentMethods: ['GCash', 'Bank Transfer', 'Cash on Delivery'],
+    paymentMethods: ['GCash', 'Bank Transfer'],
     orderDetails: ['Item is packed securely before dispatch', 'Order confirmation sent after payment', 'Shipping time depends on location', 'Please send proof of payment for verification'],
   },
   {
@@ -90,7 +90,7 @@ export const products: Product[] = [
     description:
       'Comfort-first lounge and streetwear staple made for relaxed fits, weekend wear, and easy layering.',
     details: ['Loose fit silhouette', 'Soft cotton-blend feel', 'Great for casual wear', 'Clean and ready to style'],
-    paymentMethods: ['GCash', 'Bank Transfer', 'Cash on Delivery'],
+    paymentMethods: ['GCash', 'Bank Transfer'],
     orderDetails: ['Available for order confirmation within 24 hours', 'Secure packaging included', 'Weighted shipping based on address', 'Please confirm your size before checkout'],
   },
   {
@@ -109,7 +109,7 @@ export const products: Product[] = [
     description:
       'Warm, comfortable, and easy to style with neutral tops or layered streetwear pieces for a standout casual look.',
     details: ['Soft fleece material', 'Relaxed jogger cut', 'Color-rich wine red finish', 'Ready for daily wear'],
-    paymentMethods: ['GCash', 'Bank Transfer', 'Cash on Delivery'],
+    paymentMethods: ['GCash', 'Bank Transfer'],
     orderDetails: ['Please message us for stock confirmation', 'Item is photographed before packing', 'Returns are reviewed case by case', 'Proof of payment is required before shipping'],
   },
   {
@@ -128,7 +128,7 @@ export const products: Product[] = [
     description:
       'Lightweight training pants with a clean athletic profile that balances movement, fit, and everyday versatility.',
     details: ['Breathable fabric', 'Ideal for workouts or casual wear', 'Minimalist black finish', 'Comfortable stretch feel'],
-    paymentMethods: ['GCash', 'Bank Transfer', 'Cash on Delivery'],
+    paymentMethods: ['GCash', 'Bank Transfer'],
     orderDetails: ['Payment confirms order placement', 'Prepared and packed in protective wrapping', 'Tracking provided once shipped', 'For faster processing, send the exact product name in your message'],
   },
   {
@@ -147,7 +147,7 @@ export const products: Product[] = [
     description:
       'A throw-on-and-go hoodie with a clean silhouette, good layering potential, and everyday comfort for cooler days.',
     details: ['Comfortable everyday hoodie', 'Soft neutral grey color', 'Relaxed fit for layering', 'Good condition with minimal wear'],
-    paymentMethods: ['GCash', 'Bank Transfer', 'Cash on Delivery'],
+    paymentMethods: ['GCash', 'Bank Transfer'],
     orderDetails: ['Order is reserved after payment confirmation', 'Item photos are sent upon request', 'Customer support is available for order updates', 'Strictly no cancellation after item is packed'],
   },
 ]

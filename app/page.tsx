@@ -4,7 +4,13 @@ import { Logo, LogoIcon } from '@/components/logo'
 import { products, type Product } from '@/data/products'
 import { ArrowLeft, ArrowRight, Search, Sparkles, Star } from 'lucide-react'
 import Link from 'next/link'
-import { useMemo, useRef, useState, type SVGProps } from 'react'
+import { useEffect, useMemo, useRef, useState, type SVGProps } from 'react'
+
+const formatPrice = (price: number) =>
+  `₱${price.toLocaleString('en-PH', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`
 
 function FacebookIcon(props: SVGProps<SVGSVGElement>) {
   return (
@@ -59,12 +65,6 @@ function ProductCard({ product }: { product: Product }) {
   }
 
   const originalPrice = product.originalPrice
-
-  const formatPrice = (price: number) =>
-    `₱${price.toLocaleString('en-PH', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`
 
   return (
     
@@ -179,7 +179,15 @@ function ProductCard({ product }: { product: Product }) {
 
 export default function HomePage() {
   const [search, setSearch] = useState('')
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
   const sliderRef = useRef<HTMLDivElement | null>(null)
+  const searchInputRef = useRef<HTMLInputElement | null>(null)
+
+  useEffect(() => {
+    if (isSearchOpen) {
+      searchInputRef.current?.focus()
+    }
+  }, [isSearchOpen])
 
   const filteredProducts = useMemo(() => {
     const searchTerm = search.trim().toLowerCase()
@@ -202,6 +210,8 @@ export default function HomePage() {
       return haystack.includes(searchTerm)
     })
   }, [search])
+
+  const searchResults = search.trim() ? filteredProducts.slice(0, 5) : products.slice(0, 5)
 
   const scrollSlider = (direction: 'prev' | 'next') => {
     const cardWidth = 320
@@ -270,10 +280,73 @@ const handleVideoEnded = () => {
               <a href="#about">About</a>
             </nav>
 
-            <div className="flex items-center gap-3">
-              <button className="rounded-full border border-zinc-200 bg-white p-2.5 shadow-sm transition hover:-translate-y-0.5">
-                <Search className="h-4 w-4" />
-              </button>
+            <div className="relative flex items-center gap-3">
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsSearchOpen((open) => !open)}
+                  className="rounded-full border border-zinc-200 bg-white p-2.5 shadow-sm transition hover:-translate-y-0.5"
+                  aria-label="Toggle search"
+                >
+                  <Search className="h-4 w-4" />
+                </button>
+
+                {isSearchOpen && (
+                  <div className="absolute right-0 top-full z-40 mt-3 w-[min(420px,calc(100vw-2rem))] overflow-hidden rounded-[22px] border border-zinc-200 bg-white shadow-[0_24px_60px_rgba(15,23,42,0.14)]">
+                    <div className="flex items-center gap-3 border-b border-zinc-100 px-4 py-3">
+                      <Search className="h-4 w-4 text-zinc-500" />
+                      <input
+                        ref={searchInputRef}
+                        type="search"
+                        value={search}
+                        onChange={(event) => setSearch(event.target.value)}
+                        placeholder="Search products, colors, sizes..."
+                        aria-label="Search products in the header"
+                        className="w-full bg-transparent text-sm text-zinc-700 placeholder:text-zinc-400 focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setIsSearchOpen(false)}
+                        className="rounded-full border border-zinc-200 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500"
+                        aria-label="Close search"
+                      >
+                        Esc
+                      </button>
+                    </div>
+
+                    <div className="max-h-[320px] overflow-y-auto p-2">
+                      {search.trim() && filteredProducts.length === 0 ? (
+                        <div className="px-3 py-5 text-sm text-zinc-500">
+                          No matches for “{search.trim()}”. Try a different color, size, or category.
+                        </div>
+                      ) : (
+                        searchResults.map((product) => (
+                          <Link
+                            key={product.id}
+                            href={`/products/${product.id}`}
+                            onClick={() => setIsSearchOpen(false)}
+                            className="flex items-center gap-3 rounded-2xl px-3 py-2 text-left transition hover:bg-zinc-100"
+                          >
+                            <img
+                              src={product.image}
+                              alt={product.name}
+                              className="h-14 w-14 rounded-xl object-cover"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-semibold text-zinc-800">{product.name}</p>
+                              <div className="mt-1 flex items-center justify-between gap-3 text-[11px] text-zinc-500">
+                                <span>{product.category}</span>
+                                <span className="font-semibold text-zinc-800">{formatPrice(product.price)}</span>
+                              </div>
+                            </div>
+                          </Link>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <button className="rounded-full bg-zinc-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-800">
                 Shop now
               </button>
