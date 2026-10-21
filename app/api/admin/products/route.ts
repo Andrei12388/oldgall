@@ -3,6 +3,8 @@ import { getDatabase } from '@/lib/mongodb'
 import { ADMIN_PASSCODE, ADMIN_USERNAME, isAuthorizedAdmin } from '@/lib/admin-auth'
 import type { Product } from '@/data/products'
 
+export const runtime = 'nodejs'
+
 function normalizeProduct(payload: Partial<Product> & Record<string, unknown>) {
   const productId = Number(payload.id ?? 0)
   const name = typeof payload.name === 'string' ? payload.name.trim() : ''

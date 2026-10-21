@@ -5,11 +5,11 @@ const uri = process.env.MONGODB_URI
 const dbName = process.env.MONGODB_DB
 
 if (!uri) {
-  throw new Error('Please add MONGODB_URI to .env.local')
+  throw new Error('Missing MONGODB_URI. Add it in Vercel Project Settings > Environment Variables and redeploy.')
 }
 
 if (!dbName) {
-  throw new Error('Please add MONGODB_DB to .env.local')
+  throw new Error('Missing MONGODB_DB. Add it in Vercel Project Settings > Environment Variables and redeploy.')
 }
 
 const options = {}
