@@ -588,7 +588,7 @@ const handleVideoEnded = () => {
         OLDIES GALLERY
       </p>
       <p className="mt-1 text-sm text-zinc-600">
-        Curated thrifted finds for everyday style.
+        Turning old garments into one's new OOTD.
       </p>
     </div>
 
