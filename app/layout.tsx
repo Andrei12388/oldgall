@@ -17,15 +17,15 @@ export const metadata: Metadata = {
   description:
     "Browse curated pre-loved and secondhand fashion finds in the Philippines with trusted quality, fair pricing, and stylish everyday pieces.",
   keywords: [
-    "ukay salakay",
+    "Oldies Gallery",
     "secondhand clothes Philippines",
     "thrifted fashion",
     "pre-loved clothes",
-    "ukay ukay",
+    "Oldies Gallery",
     "streetwear Philippines",
   ],
   openGraph: {
-    title: "Ukay Salakay | Thrifted Fashion & Preloved Finds in the Philippines",
+    title: "Oldies Gallery | Thrifted Fashion & Preloved Finds in the Philippines",
     description:
       "Explore premium secondhand fashion, sneakers, jackets, and casual essentials in the Philippines.",
     type: "website",
