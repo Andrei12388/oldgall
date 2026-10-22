@@ -148,7 +148,7 @@ export default function AdminProductsPage() {
       return
     }
 
-    const timeout = window.setTimeout(() => setNotice(null), 3000)
+    const timeout = window.setTimeout(() => setNotice(null), 10000)
     return () => window.clearTimeout(timeout)
   }, [notice])
 
@@ -406,7 +406,7 @@ export default function AdminProductsPage() {
                   : 'border-red-200 bg-red-50 text-red-700'
               }`}
               style={{
-                animation: 'toast-slide 0.45s ease-out forwards',
+                animation: 'toast-slide 1.45s ease-out forwards',
               }}
             >
               {notice.message}
@@ -911,7 +911,7 @@ export default function AdminProductsPage() {
         @keyframes toast-slide {
           0% {
             opacity: 0;
-            transform: translateX(42px) translateY(10px);
+            transform: translateX(60px) translateY(0px);
           }
           18% {
             opacity: 1;
@@ -922,7 +922,7 @@ export default function AdminProductsPage() {
           }
           100% {
             opacity: 0;
-            transform: translateX(-8px) translateY(10px);
+            transform: translateX(-60px) translateY(0px);
           }
         }
       `}</style>
