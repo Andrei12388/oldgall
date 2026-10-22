@@ -25,8 +25,64 @@ const initialDraft: Product = {
   orderDetails: [],
 }
 
+const MAX_IMAGE_DIMENSION = 1600
+const TARGET_IMAGE_QUALITY = 0.82
+
 function buildAuthHeader(username: string, password: string) {
   return `Basic ${btoa(`${username}:${password}`)}`
+}
+
+async function fileToDataUrl(file: File) {
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+
+    reader.onload = () => {
+      const source = typeof reader.result === 'string' ? reader.result : ''
+      if (!source) {
+        reject(new Error('Unable to read selected image.'))
+        return
+      }
+
+      const image = new window.Image()
+
+      image.onload = () => {
+        const canvas = document.createElement('canvas')
+        const context = canvas.getContext('2d')
+
+        if (!context) {
+          resolve(source)
+          return
+        }
+
+        let width = image.width
+        let height = image.height
+
+        if (width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION) {
+          const ratio = Math.min(MAX_IMAGE_DIMENSION / width, MAX_IMAGE_DIMENSION / height)
+          width = Math.max(1, Math.round(width * ratio))
+          height = Math.max(1, Math.round(height * ratio))
+        }
+
+        canvas.width = width
+        canvas.height = height
+        context.fillStyle = '#ffffff'
+        context.fillRect(0, 0, width, height)
+        context.drawImage(image, 0, 0, width, height)
+
+        const mimeType = file.type === 'image/png' ? 'image/png' : 'image/jpeg'
+        const finalDataUrl = canvas.toDataURL(mimeType, mimeType === 'image/png' ? undefined : TARGET_IMAGE_QUALITY)
+        resolve(finalDataUrl)
+      }
+
+      image.onerror = () => reject(new Error('The selected file is not a valid image.'))
+      image.src = source
+    }
+
+    reader.onerror = () => reject(new Error('Unable to read selected image.'))
+    reader.readAsDataURL(file)
+  })
+
+  return dataUrl
 }
 
 export default function AdminProductsPage() {
@@ -39,6 +95,8 @@ export default function AdminProductsPage() {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false)
 
   const authHeader = useMemo(
     () => buildAuthHeader(username || ADMIN_USERNAME, passcode || ADMIN_PASSCODE),
@@ -85,6 +143,19 @@ export default function AdminProductsPage() {
     void fetchProducts()
   }, [isAuthenticated, authHeader])
 
+  useEffect(() => {
+    if (!notice) {
+      return
+    }
+
+    const timeout = window.setTimeout(() => setNotice(null), 3000)
+    return () => window.clearTimeout(timeout)
+  }, [notice])
+
+  function showNotice(message: string, type: 'success' | 'error' = 'success') {
+    setNotice({ message, type })
+  }
+
   function updateDraft<K extends keyof Product>(key: K, value: Product[K]) {
     setDraft((current) => ({ ...current, [key]: value }))
   }
@@ -94,19 +165,83 @@ export default function AdminProductsPage() {
     setEditingId(null)
   }
 
+  function openAddProductModal() {
+    resetDraft()
+    setIsProductModalOpen(true)
+    setError('')
+  }
+
+  function closeProductModal() {
+    setIsProductModalOpen(false)
+    resetDraft()
+  }
+
+  async function handleGalleryFiles(files: FileList | null, index?: number) {
+    if (!files || files.length === 0) {
+      return
+    }
+
+    const validFiles = Array.from(files).filter((file) => file.type.startsWith('image/'))
+
+    if (!validFiles.length) {
+      setError('Please choose valid image files.')
+      return
+    }
+
+    try {
+      setError('')
+      const convertedImages = await Promise.all(validFiles.map((file) => fileToDataUrl(file)))
+
+      setDraft((current) => {
+        const nextImages = [...(current.images ?? [])].filter(Boolean)
+
+        if (typeof index === 'number') {
+          nextImages[index] = convertedImages[0]
+        } else {
+          nextImages.push(...convertedImages)
+        }
+
+        const firstImage = nextImages[0] ?? current.image ?? ''
+
+        return {
+          ...current,
+          images: nextImages,
+          image: firstImage,
+        }
+      })
+    } catch (uploadError) {
+      setError(uploadError instanceof Error ? uploadError.message : 'Unable to process image.')
+    }
+  }
+
+  function handleRemoveGalleryImage(index: number) {
+    setDraft((current) => {
+      const nextImages = [...(current.images ?? [])].filter(Boolean)
+      nextImages.splice(index, 1)
+
+      return {
+        ...current,
+        images: nextImages,
+        image: nextImages[0] ?? '',
+      }
+    })
+  }
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setIsSubmitting(true)
     setError('')
 
     try {
+      const sanitizedImages = (draft.images ?? []).filter((image) => typeof image === 'string' && image.trim().length > 0)
       const payload = {
         ...draft,
         id: editingId ?? (draft.id || Math.max(0, ...products.map((product) => product.id)) + 1),
         price: Number(draft.price),
         originalPrice: Number(draft.originalPrice || draft.price),
         rating: Number(draft.rating || 4.8),
-        images: draft.images.length ? draft.images : draft.image ? [draft.image] : [],
+        image: draft.image || sanitizedImages[0] || '',
+        images: sanitizedImages.length ? sanitizedImages : draft.image ? [draft.image] : [],
         details: draft.details.length ? draft.details : [],
         paymentMethods: draft.paymentMethods.length ? draft.paymentMethods : [],
         orderDetails: draft.orderDetails.length ? draft.orderDetails : [],
@@ -127,7 +262,9 @@ export default function AdminProductsPage() {
         throw new Error(data.message || 'Unable to save product.')
       }
 
-      resetDraft()
+      const actionMessage = editingId ? 'Product updated successfully.' : 'Product added successfully.'
+      showNotice(actionMessage, 'success')
+      closeProductModal()
       await fetchProducts()
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'Unable to save product.')
@@ -138,6 +275,11 @@ export default function AdminProductsPage() {
 
   async function handleDelete(productId: number) {
     setError('')
+
+    const confirmed = window.confirm('Are you sure you want to delete this product?')
+    if (!confirmed) {
+      return
+    }
 
     try {
       const response = await fetch(`/api/admin/products?id=${productId}`, {
@@ -154,6 +296,7 @@ export default function AdminProductsPage() {
         throw new Error(data.message || 'Unable to delete product.')
       }
 
+      showNotice('Product deleted successfully.', 'success')
       await fetchProducts()
       if (editingId === productId) {
         resetDraft()
@@ -172,13 +315,16 @@ export default function AdminProductsPage() {
   )
 
   function handleEdit(product: Product) {
+    const existingImages = (product.images ?? []).filter(Boolean)
+
     setDraft({
       ...product,
-      image: product.image || product.images?.[0] || '',
-      images: product.images?.length ? product.images : product.image ? [product.image] : [],
+      image: product.image || existingImages[0] || '',
+      images: existingImages.length ? existingImages : product.image ? [product.image] : [],
     })
     setEditingId(product.id)
     setError('')
+    setIsProductModalOpen(true)
   }
 
   const filteredProducts = useMemo(() => {
@@ -251,6 +397,23 @@ export default function AdminProductsPage() {
   return (
     <main className="min-h-screen bg-[#f6f1ea] px-4 py-10 text-zinc-900 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
+        <div className="pointer-events-none fixed right-5 bottom-5 z-50 flex max-w-sm flex-col gap-3">
+          {notice && (
+            <div
+              className={`pointer-events-auto rounded-2xl border px-4 py-3 text-sm font-medium shadow-[0_18px_40px_rgba(15,23,42,0.14)] backdrop-blur-sm ${
+                notice.type === 'success'
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                  : 'border-red-200 bg-red-50 text-red-700'
+              }`}
+              style={{
+                animation: 'toast-slide 0.45s ease-out forwards',
+              }}
+            >
+              {notice.message}
+            </div>
+          )}
+        </div>
+
         <div className="mb-8 flex items-center justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-500">Admin panel</p>
@@ -270,195 +433,17 @@ export default function AdminProductsPage() {
           </button>
         </div>
 
-        <div className="grid gap-8 xl:grid-cols-[1.1fr_2fr]">
-          <section className="rounded-[26px] border border-zinc-200 bg-white p-6 shadow-[0_16px_30px_rgba(15,23,42,0.05)]">
-            <h2 className="text-xl font-bold">{editingId ? 'Edit product' : 'Add product'}</h2>
+        <div className="space-y-6">
+          <div className="flex items-end justify-end gap-3">
 
-            <form onSubmit={handleSubmit} className="mt-5 space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                
-<label className="flex cursor-pointer items-center gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4 text-sm font-medium text-zinc-700 transition hover:border-zinc-300 sm:col-span-2">
-  <input
-    type="checkbox"
-    checked={draft.soldOut}
-    onChange={(event) => updateDraft('soldOut', event.target.checked)}
-    className="h-5 w-5 rounded border-zinc-300 accent-red-600"
-  />
-
-  <span className="flex-1">
-    <span className="block font-semibold text-zinc-900">Sold Out</span>
-    <span className="mt-1 block text-xs font-normal text-zinc-500">
-      Mark this product as unavailable for purchase.
-    </span>
-  </span>
-
-  <span
-    className={`rounded-full px-3 py-1 text-xs font-semibold ${
-      draft.soldOut
-        ? 'bg-red-100 text-red-700'
-        : 'bg-green-100 text-green-700'
-    }`}
-  >
-    {draft.soldOut ? 'Sold Out' : 'Available'}
-  </span>
-</label>
-
-                <label className="text-sm font-medium text-zinc-700 sm:col-span-2">
-                  Product name
-                  <input
-                    value={draft.name}
-                    onChange={(event) => updateDraft('name', event.target.value)}
-                    className="mt-2 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5"
-                  />
-                </label>
-
-                <label className="text-sm font-medium text-zinc-700">
-                  Category
-                  <input
-                    value={draft.category}
-                    onChange={(event) => updateDraft('category', event.target.value)}
-                    className="mt-2 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5"
-                  />
-                </label>
-
-                <label className="text-sm font-medium text-zinc-700">
-                  Condition
-                  <select
-                    value={draft.condition}
-                    onChange={(event) => updateDraft('condition', event.target.value as Product['condition'])}
-                    className="mt-2 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5"
-                  >
-                    <option value="Excellent">Excellent</option>
-                    <option value="Very Good">Very Good</option>
-                    <option value="Good">Good</option>
-                  </select>
-                </label>
-
-                <label className="text-sm font-medium text-zinc-700">
-                  Color
-                  <input
-                    value={draft.color}
-                    onChange={(event) => updateDraft('color', event.target.value)}
-                    className="mt-2 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5"
-                  />
-                </label>
-
-                <label className="text-sm font-medium text-zinc-700">
-                  Size
-                  <input
-                    value={draft.size}
-                    onChange={(event) => updateDraft('size', event.target.value)}
-                    className="mt-2 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5"
-                  />
-                </label>
-
-                <label className="text-sm font-medium text-zinc-700">
-                  Price
-                  <input
-                    type="number"
-                    value={draft.price}
-                    onChange={(event) => updateDraft('price', Number(event.target.value))}
-                    className="mt-2 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5"
-                  />
-                </label>
-
-                <label className="text-sm font-medium text-zinc-700">
-                  Original price
-                  <input
-                    type="number"
-                    value={draft.originalPrice}
-                    onChange={(event) => updateDraft('originalPrice', Number(event.target.value))}
-                    className="mt-2 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5"
-                  />
-                </label>
-
-                <label className="text-sm font-medium text-zinc-700 sm:col-span-2">
-                  Main image URL
-                  <input
-                    value={draft.image}
-                    onChange={(event) => {
-                      updateDraft('image', event.target.value)
-                      if (!draft.images.length) {
-                        updateDraft('images', event.target.value ? [event.target.value] : [])
-                      }
-                    }}
-                    className="mt-2 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5"
-                  />
-                </label>
-
-                <label className="text-sm font-medium text-zinc-700 sm:col-span-2">
-                  Gallery image URLs (comma separated)
-                  <input
-                    value={draft.images.join(', ')}
-                    onChange={(event) => {
-                      const nextImages = event.target.value
-                        .split(',')
-                        .map((value) => value.trim())
-                        .filter(Boolean)
-
-                      updateDraft('images', nextImages)
-                      if (nextImages[0]) {
-                        updateDraft('image', nextImages[0])
-                      }
-                    }}
-                    className="mt-2 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5"
-                  />
-                </label>
-
-                {currentImageList.length > 0 && (
-                  <div className="sm:col-span-2">
-                    <p className="mb-2 text-sm font-medium text-zinc-700">Preview</p>
-                    <div className="flex flex-wrap gap-3">
-                      {currentImageList.map((image, index) => (
-                        <button
-                          key={`${image}-${index}`}
-                          type="button"
-                          onClick={() => updateDraft('image', image)}
-                          className="overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50 p-1 transition hover:border-zinc-400"
-                        >
-                          <img
-                            src={image}
-                            alt={`${draft.name || 'Product'} preview ${index + 1}`}
-                            className="h-20 w-20 rounded-xl object-cover"
-                          />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <label className="text-sm font-medium text-zinc-700 sm:col-span-2">
-                  Description
-                  <textarea
-                    value={draft.description}
-                    onChange={(event) => updateDraft('description', event.target.value)}
-                    className="mt-2 min-h-[120px] w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5"
-                  />
-                </label>
-                
-              </div>
-
-              {error && <p className="text-sm text-red-600">{error}</p>}
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
-                >
-                  {isSubmitting ? 'Saving...' : editingId ? 'Update product' : 'Add product'}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={resetDraft}
-                  className="rounded-full border border-zinc-200 bg-white px-5 py-2.5 text-sm font-semibold text-zinc-700"
-                >
-                  Reset
-                </button>
-              </div>
-            </form>
-          </section>
+            <button
+              type="button"
+              onClick={openAddProductModal}
+              className="rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800"
+            >
+              Add product
+            </button>
+          </div>
 
           <section className="rounded-[26px] border border-zinc-200 bg-white p-6 shadow-[0_16px_30px_rgba(15,23,42,0.05)]">
            
@@ -609,7 +594,7 @@ export default function AdminProductsPage() {
 
         {product.images?.length > 1 && (
           <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-            {product.images.slice(0, 4).map((image, index) => (
+            {product.images.slice(0, 8).map((image, index) => (
               <img
                 key={`${product.id}-thumb-${index}`}
                 src={image}
@@ -632,7 +617,315 @@ export default function AdminProductsPage() {
 
           </section>
         </div>
+
+        {isProductModalOpen && (
+          <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+            <div className="w-full max-w-3xl overflow-hidden rounded-[30px] border border-zinc-200 bg-white shadow-[0_30px_80px_rgba(15,23,42,0.25)]">
+              <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-4">
+                <h2 className="text-xl font-bold text-zinc-900">{editingId ? 'Edit product' : 'Add product'}</h2>
+                <button
+                  type="button"
+                  onClick={closeProductModal}
+                  className="rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50"
+                >
+                  Close
+                </button>
+              </div>
+
+              <div className="max-h-[80vh] overflow-y-auto p-6">
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4 text-sm font-medium text-zinc-700 transition hover:border-zinc-300 sm:col-span-2">
+                      <input
+                        type="checkbox"
+                        checked={draft.soldOut}
+                        onChange={(event) => updateDraft('soldOut', event.target.checked)}
+                        className="h-5 w-5 rounded border-zinc-300 accent-red-600"
+                      />
+
+                      <span className="flex-1">
+                        <span className="block font-semibold text-zinc-900">Sold Out</span>
+                        <span className="mt-1 block text-xs font-normal text-zinc-500">
+                          Mark this product as unavailable for purchase.
+                        </span>
+                      </span>
+
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                          draft.soldOut ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
+                        }`}
+                      >
+                        {draft.soldOut ? 'Sold Out' : 'Available'}
+                      </span>
+                    </label>
+
+                    <label className="text-sm font-medium text-zinc-700 sm:col-span-2">
+                      Product name
+                      <input
+                        value={draft.name}
+                        onChange={(event) => updateDraft('name', event.target.value)}
+                        className="mt-2 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5"
+                      />
+                    </label>
+
+                    <label className="text-sm font-medium text-zinc-700">
+                      Category
+                      <input
+                        value={draft.category}
+                        onChange={(event) => updateDraft('category', event.target.value)}
+                        className="mt-2 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5"
+                      />
+                    </label>
+
+                    <label className="text-sm font-medium text-zinc-700">
+                      Condition
+                      <select
+                        value={draft.condition}
+                        onChange={(event) => updateDraft('condition', event.target.value as Product['condition'])}
+                        className="mt-2 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5"
+                      >
+                        <option value="Excellent">Excellent</option>
+                        <option value="Very Good">Very Good</option>
+                        <option value="Good">Good</option>
+                      </select>
+                    </label>
+
+                    <label className="text-sm font-medium text-zinc-700">
+                      Color
+                      <input
+                        value={draft.color}
+                        onChange={(event) => updateDraft('color', event.target.value)}
+                        className="mt-2 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5"
+                      />
+                    </label>
+
+                    <label className="text-sm font-medium text-zinc-700">
+                      Size
+                      <input
+                        value={draft.size}
+                        onChange={(event) => updateDraft('size', event.target.value)}
+                        className="mt-2 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5"
+                      />
+                    </label>
+
+                    <label className="text-sm font-medium text-zinc-700">
+                      Price
+                      <input
+                        type="number"
+                        value={draft.price}
+                        onChange={(event) => updateDraft('price', Number(event.target.value))}
+                        className="mt-2 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5"
+                      />
+                    </label>
+
+                    <label className="text-sm font-medium text-zinc-700">
+                      Original price
+                      <input
+                        type="number"
+                        value={draft.originalPrice}
+                        onChange={(event) => updateDraft('originalPrice', Number(event.target.value))}
+                        className="mt-2 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5"
+                      />
+                    </label>
+
+                    <div className="sm:col-span-2">
+                      <p className="mb-2 text-sm font-medium text-zinc-700">Main image</p>
+                      <div className="flex flex-col gap-3 rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 p-3">
+                        {draft.image ? (
+                          <div className="flex items-center gap-3">
+                            <img src={draft.image} alt="Main product preview" className="h-20 w-20 rounded-xl object-cover" />
+                            <label className="cursor-pointer rounded-full border border-zinc-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-zinc-700 transition hover:border-zinc-400">
+                              Replace main image
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(event) => {
+                                  const file = event.target.files?.[0]
+                                  if (!file) return
+                                  void handleGalleryFiles(event.target.files, 0)
+                                  event.currentTarget.value = ''
+                                }}
+                              />
+                            </label>
+                          </div>
+                        ) : (
+                          <label className="flex cursor-pointer items-center justify-center rounded-2xl border border-dashed border-zinc-300 bg-white px-4 py-8 text-sm font-medium text-zinc-600 transition hover:border-zinc-400 hover:text-zinc-900">
+                            Upload main image
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(event) => {
+                                const file = event.target.files?.[0]
+                                if (!file) return
+                                void handleGalleryFiles(event.target.files, 0)
+                                event.currentTarget.value = ''
+                              }}
+                            />
+                          </label>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <div className="mb-2 flex items-center justify-between gap-3">
+                        <p className="text-sm font-medium text-zinc-700">Gallery images</p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDraft((current) => ({
+                              ...current,
+                              images: [...(current.images ?? []).filter(Boolean), ''],
+                            }))
+                          }}
+                          className="rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-zinc-700 transition hover:border-zinc-400"
+                        >
+                          Add image
+                        </button>
+                      </div>
+
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {draft.images.length === 0 ? (
+                          <label className="flex min-h-[170px] cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 p-4 text-center text-sm font-medium text-zinc-600 transition hover:border-zinc-400 hover:text-zinc-900">
+                            <span className="text-2xl">＋</span>
+                            <span>Add gallery photos</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              multiple
+                              className="hidden"
+                              onChange={(event) => {
+                                void handleGalleryFiles(event.target.files)
+                                event.currentTarget.value = ''
+                              }}
+                            />
+                          </label>
+                        ) : (
+                          draft.images.map((image, index) => (
+                            <div key={`${image || 'empty'}-${index}`} className="rounded-2xl border border-zinc-200 bg-zinc-50 p-2">
+                              <div className="mb-2 flex items-center justify-between gap-2">
+                                <span className="text-xs font-semibold uppercase tracking-[0.14em] text-zinc-500">
+                                  Image {index + 1}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveGalleryImage(index)}
+                                  className="text-xs font-semibold text-red-600 transition hover:text-red-700"
+                                >
+                                  Remove
+                                </button>
+                              </div>
+
+                              {image ? (
+                                <button
+                                  type="button"
+                                  onClick={() => updateDraft('image', image)}
+                                  className="mb-2 block overflow-hidden rounded-xl border border-zinc-200 bg-white p-1 text-left"
+                                >
+                                  <img src={image} alt={`Gallery preview ${index + 1}`} className="h-32 w-full rounded-lg object-cover" />
+                                </button>
+                              ) : (
+                                <div className="mb-2 flex h-32 items-center justify-center rounded-xl border border-dashed border-zinc-300 bg-white text-xs font-medium uppercase tracking-[0.16em] text-zinc-400">
+                                  Empty slot
+                                </div>
+                              )}
+
+                              <label className="flex cursor-pointer items-center justify-center rounded-full border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-700 transition hover:border-zinc-400">
+                                {image ? 'Replace' : 'Upload'}
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(event) => {
+                                    void handleGalleryFiles(event.target.files, index)
+                                    event.currentTarget.value = ''
+                                  }}
+                                />
+                              </label>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+
+                    {currentImageList.length > 0 && (
+                      <div className="sm:col-span-2">
+                        <p className="mb-2 text-sm font-medium text-zinc-700">Preview</p>
+                        <div className="flex flex-wrap gap-3">
+                          {currentImageList.map((image, index) => (
+                            <button
+                              key={`${image}-${index}`}
+                              type="button"
+                              onClick={() => updateDraft('image', image)}
+                              className="overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50 p-1 transition hover:border-zinc-400"
+                            >
+                              <img
+                                src={image}
+                                alt={`${draft.name || 'Product'} preview ${index + 1}`}
+                                className="h-20 w-20 rounded-xl object-cover"
+                              />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <label className="text-sm font-medium text-zinc-700 sm:col-span-2">
+                      Description
+                      <textarea
+                        value={draft.description}
+                        onChange={(event) => updateDraft('description', event.target.value)}
+                        className="mt-2 min-h-[120px] w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5"
+                      />
+                    </label>
+                  </div>
+
+                  {error && <p className="text-sm text-red-600">{error}</p>}
+
+                  <div className="flex justify-end gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={closeProductModal}
+                      className="rounded-full border border-zinc-200 bg-white px-5 py-2.5 text-sm font-semibold text-zinc-700"
+                    >
+                      Cancel
+                    </button>
+
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+                    >
+                      {isSubmitting ? 'Saving...' : editingId ? 'Update product' : 'Add product'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+
+      <style jsx>{`
+        @keyframes toast-slide {
+          0% {
+            opacity: 0;
+            transform: translateX(42px) translateY(10px);
+          }
+          18% {
+            opacity: 1;
+          }
+          75% {
+            opacity: 1;
+            transform: translateX(0) translateY(0);
+          }
+          100% {
+            opacity: 0;
+            transform: translateX(-8px) translateY(10px);
+          }
+        }
+      `}</style>
     </main>
   )
 }
