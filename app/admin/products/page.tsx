@@ -85,6 +85,64 @@ async function fileToDataUrl(file: File) {
   return dataUrl
 }
 
+function ProductListSkeleton() {
+  return (
+    <div className="space-y-4" role="status" aria-label="Loading products">
+      {Array.from({ length: 3 }).map((_, index) => (
+        <article
+          key={index}
+          className="animate-pulse rounded-2xl border border-zinc-200 p-4"
+        >
+          <div className="flex items-start gap-3">
+            {/* Product image */}
+            <div className="h-20 w-20 shrink-0 rounded-xl bg-zinc-200" />
+
+            <div className="min-w-0 flex-1 space-y-3">
+              {/* Name and action buttons */}
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1 space-y-2">
+                  <div className="h-4 w-3/4 rounded bg-zinc-200" />
+                  <div className="h-3 w-1/2 rounded bg-zinc-100" />
+                </div>
+
+                <div className="flex shrink-0 gap-2">
+                  <div className="h-7 w-12 rounded-full bg-zinc-200" />
+                  <div className="h-7 w-14 rounded-full bg-zinc-200" />
+                </div>
+              </div>
+
+              {/* Price, color, size, ID, and status */}
+              <div className="flex flex-wrap gap-2">
+                {Array.from({ length: 4 }).map((_, chipIndex) => (
+                  <div
+                    key={chipIndex}
+                    className="h-6 w-16 rounded-full bg-zinc-100"
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Image thumbnails */}
+          <div className="mt-3 flex gap-2">
+            {Array.from({ length: 3 }).map((_, thumbIndex) => (
+              <div
+                key={thumbIndex}
+                className="h-12 w-12 shrink-0 rounded-lg bg-zinc-100"
+              />
+            ))}
+          </div>
+
+          {/* Updated date */}
+          <div className="mt-3 h-3 w-32 rounded bg-zinc-100" />
+        </article>
+      ))}
+
+      <span className="sr-only">Loading products...</span>
+    </div>
+  )
+}
+
 export default function AdminProductsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [username, setUsername] = useState('')
@@ -95,6 +153,7 @@ export default function AdminProductsPage() {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(true)
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [isProductModalOpen, setIsProductModalOpen] = useState(false)
 
@@ -104,6 +163,7 @@ export default function AdminProductsPage() {
   )
 
   async function fetchProducts() {
+    setIsLoading(true)
     try {
       const response = await fetch('/api/admin/products', {
         headers: {
@@ -119,6 +179,8 @@ export default function AdminProductsPage() {
       setProducts(data.products ?? [])
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'Unable to load products.')
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -510,7 +572,9 @@ export default function AdminProductsPage() {
 </div>
 
 <div className="space-y-4">
-  {products.length === 0 ? (
+  {isLoading ? (
+    <ProductListSkeleton />
+  ) : products.length === 0 ? (
     <p className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 p-8 text-center text-zinc-500">
       No products available yet.
     </p>
@@ -614,6 +678,7 @@ export default function AdminProductsPage() {
     ))
   )}
 </div>
+
 
           </section>
         </div>
