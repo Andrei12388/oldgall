@@ -230,7 +230,7 @@ export default function ProductPurchaseDetails({
           <p className="mt-2 text-center text-xs leading-5 text-zinc-500">
             {isSoldOut
               ? 'This item has already been sold and is no longer available.'
-              : 'Copy the details and paste them into our Facebook page chat to place your order.'}
+              : 'Copy the details and paste them into our Social Media page chat to place your order.'}
           </p>
         </div>
 
@@ -294,12 +294,21 @@ export default function ProductPurchaseDetails({
               <span className="font-semibold">1.</span>
               <span>Click “Copy Order Details” above.</span>
             </li>
-            <li className="flex gap-3">
-              <span className="font-semibold">2.</span>
-              <span>
-                Open our Facebook page and paste the details into chat.
-              </span>
-            </li>
+           <li className="flex gap-3">
+  <span className="font-semibold">2.</span>
+  <span>
+    Open our{' '}
+    <a
+      href="https://www.instagram.com/oldies.gallery"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="font-semibold text-zinc-900 underline underline-offset-4 transition hover:text-pink-600"
+    >
+      Social Media page
+    </a>{' '}
+    and paste the details into chat.
+  </span>
+</li>
             <li className="flex gap-3">
               <span className="font-semibold">3.</span>
               <span>Our team will assist you with checkout.</span>

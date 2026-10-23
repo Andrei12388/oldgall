@@ -46,6 +46,55 @@ function TikTokIcon(props: SVGProps<SVGSVGElement>) {
   )
 }
 
+function CollectionSkeleton() {
+  return (
+    <div
+      className="relative min-w-0 animate-pulse overflow-hidden rounded-[28px] border border-zinc-200 bg-white"
+      aria-hidden="true"
+    >
+      {/* Collection image placeholder */}
+      <div className="h-48 w-full bg-zinc-200 sm:h-72" />
+
+      {/* Text placeholders */}
+      <div className="absolute inset-x-0 bottom-0 space-y-3 bg-gradient-to-t from-black/30 to-transparent p-3 sm:p-5">
+        <div className="h-3 w-16 rounded bg-white/50" />
+        <div className="h-6 w-3/4 rounded bg-white/60 sm:h-8" />
+      </div>
+    </div>
+  )
+}
+
+function ProductCardSkeleton() {
+  return (
+    <div
+      className="min-w-[280px] max-w-[280px] animate-pulse rounded-[26px] border border-zinc-200 bg-white p-3"
+      aria-hidden="true"
+    >
+      {/* Product image placeholder */}
+      <div className="h-72 w-full rounded-[22px] bg-zinc-200" />
+
+      {/* Category */}
+      <div className="mt-4 h-3 w-24 rounded bg-zinc-200" />
+
+      {/* Product name */}
+      <div className="mt-3 h-5 w-4/5 rounded bg-zinc-200" />
+
+      {/* Condition */}
+      <div className="mt-6 h-3 w-16 rounded bg-zinc-200" />
+      <div className="mt-2 h-4 w-24 rounded bg-zinc-200" />
+
+      {/* Price */}
+      <div className="mt-5 h-6 w-28 rounded bg-zinc-200" />
+
+      {/* Color and size */}
+      <div className="mt-4 flex gap-2">
+        <div className="h-7 w-20 rounded-full bg-zinc-200" />
+        <div className="h-7 w-16 rounded-full bg-zinc-200" />
+      </div>
+    </div>
+  )
+}
+
 const collectionAccentMap: Record<string, string> = {
   Accessories: 'from-amber-200 via-orange-100 to-white',
   Bottoms: 'from-rose-200 via-pink-100 to-white',
@@ -180,33 +229,53 @@ function ProductCard({ product }: { product: Product }) {
 
 export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([])
-  const [search, setSearch] = useState('')
+const [search, setSearch] = useState('')
+const [isLoading, setIsLoading] = useState(true)
+const [hasError, setHasError] = useState(false)
   const sliderRef = useRef<HTMLDivElement | null>(null)
   const searchInputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
-    let ignore = false
+  let ignore = false
 
-    async function loadProducts() {
-      try {
-        const response = await fetch('/api/products', { cache: 'no-store' })
-        const data = (await response.json()) as { products?: Product[] }
+  async function loadProducts() {
+    try {
+      setIsLoading(true)
+      setHasError(false)
 
-        if (!ignore) {
-          setProducts(data.products ?? [])
-        }
-      } catch {
-        if (!ignore) {
-          setProducts([])
-        }
+      const response = await fetch('/api/products', {
+        cache: 'no-store',
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch products')
+      }
+
+      const data = (await response.json()) as {
+        products?: Product[]
+      }
+
+      if (!ignore) {
+        setProducts(data.products ?? [])
+      }
+    } catch {
+      if (!ignore) {
+        setProducts([])
+        setHasError(true)
+      }
+    } finally {
+      if (!ignore) {
+        setIsLoading(false)
       }
     }
+  }
 
-    void loadProducts()
-    return () => {
-      ignore = true
-    }
-  }, [])
+  void loadProducts()
+
+  return () => {
+    ignore = true
+  }
+}, [])
 
   const collectionGroups = useMemo(
     () =>
@@ -373,7 +442,18 @@ const handleVideoEnded = () => {
         {search.trim() && (
           <div className="absolute inset-x-0 top-full z-[60] mt-2 max-h-[min(360px,60vh)] overflow-y-auto rounded-2xl border border-zinc-200 bg-white p-2 shadow-[0_24px_60px_rgba(15,23,42,0.16)]">
 
-            {filteredProducts.length === 0 ? (
+            {isLoading ? (
+  <div
+    className="px-3 py-5 text-sm text-zinc-500"
+    role="status"
+  >
+    Loading products...
+  </div>
+) : hasError ? (
+  <div className="px-3 py-5 text-sm text-red-600">
+    Unable to load products. Please try again later.
+  </div>
+) : filteredProducts.length === 0 ? (
               <div className="px-3 py-5 text-sm text-zinc-500">
                 No matches for "{search.trim()}". Try another color, size, or category.
               </div>
@@ -522,21 +602,36 @@ const handleVideoEnded = () => {
             </div>
           </div>
 
-          {filteredProducts.length === 0 ? (
-            <div className="rounded-[24px] border border-dashed border-zinc-300 bg-white p-8 text-center text-zinc-600">
-              No products match your search. Try a different color, size, or category.
-            </div>
-          ) : (
-            <div
-              ref={sliderRef}
-              className="scrollbar-none flex snap-x gap-5 overflow-x-auto pb-4"
-              aria-live="polite"
-            >
-              {filteredProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-          )}
+          {isLoading ? (
+  <div
+    className="scrollbar-none flex snap-x gap-5 overflow-x-auto pb-4"
+    role="status"
+    aria-label="Loading products"
+  >
+    {Array.from({ length: 4 }).map((_, index) => (
+      <ProductCardSkeleton key={index} />
+    ))}
+    <span className="sr-only">Loading products...</span>
+  </div>
+) : hasError ? (
+  <div className="rounded-[24px] border border-dashed border-zinc-300 bg-white p-8 text-center text-zinc-600">
+    Unable to load products. Please try again later.
+  </div>
+) : filteredProducts.length === 0 ? (
+  <div className="rounded-[24px] border border-dashed border-zinc-300 bg-white p-8 text-center text-zinc-600">
+    No products match your search. Try a different color, size, or category.
+  </div>
+) : (
+  <div
+    ref={sliderRef}
+    className="scrollbar-none flex snap-x gap-5 overflow-x-auto pb-4"
+    aria-live="polite"
+  >
+    {filteredProducts.map((product) => (
+      <ProductCard key={product.id} product={product} />
+    ))}
+  </div>
+)}
         </section>
 
         <section
@@ -553,28 +648,57 @@ const handleVideoEnded = () => {
             </a>
           </div>
 
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-            {collectionGroups.map((collection) => (
-              <Link
-                key={collection.title}
-                href={`/collections/${collection.title.toLowerCase().replace(/\s+/g, '-')}`}
-                className="group relative block overflow-hidden rounded-[28px] border border-zinc-200 bg-white shadow-[0_16px_32px_rgba(15,23,42,0.05)]"
-              >
-                <div className={`absolute inset-0 bg-gradient-to-br ${collection.accent}`} />
-                <img
-                  src={collection.image}
-                  alt={collection.title}
-                  className="h-72 w-full object-cover opacity-80 transition duration-500 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
+          {isLoading ? (
+  <div
+    className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-2 xl:grid-cols-4"
+    role="status"
+    aria-label="Loading collections"
+  >
+    {Array.from({ length: 4 }).map((_, index) => (
+      <CollectionSkeleton key={index} />
+    ))}
 
-                <div className="absolute inset-x-0 bottom-0 p-5 text-white">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/80">{collection.count}</p>
-                  <h3 className="mt-2 text-2xl font-black">{collection.title}</h3>
-                </div>
-              </Link>
-            ))}
-          </div>
+    <span className="sr-only">Loading collections...</span>
+  </div>
+) : hasError ? (
+  <div className="rounded-[24px] border border-dashed border-zinc-300 bg-white p-8 text-center text-zinc-600">
+    Unable to load collections. Please try again later.
+  </div>
+) : collectionGroups.length === 0 ? (
+  <div className="rounded-[24px] border border-dashed border-zinc-300 bg-white p-8 text-center text-zinc-600">
+    No collections available yet.
+  </div>
+) : (
+  <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-2 xl:grid-cols-4">
+    {collectionGroups.map((collection) => (
+      <Link
+        key={collection.title}
+        href={`/collections/${collection.title.toLowerCase().replace(/\s+/g, '-')}`}
+        className="group relative block overflow-hidden rounded-[28px] border border-zinc-200 bg-white shadow-[0_16px_32px_rgba(15,23,42,0.05)]"
+      >
+        <div className={`absolute inset-0 bg-gradient-to-br ${collection.accent}`} />
+
+        <img
+          src={collection.image}
+          alt={collection.title}
+          className="h-48 w-full object-cover opacity-80 transition duration-500 group-hover:scale-105 sm:h-72"
+        />
+
+        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
+
+        <div className="absolute inset-x-0 bottom-0 p-3 text-white sm:p-5">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-white/80 sm:text-xs sm:tracking-[0.2em]">
+            {collection.count}
+          </p>
+
+          <h3 className="mt-1 text-lg font-black sm:mt-2 sm:text-2xl">
+            {collection.title}
+          </h3>
+        </div>
+      </Link>
+    ))}
+  </div>
+)}
         </section>
 
         <script
@@ -583,7 +707,7 @@ const handleVideoEnded = () => {
             __html: JSON.stringify({
               '@context': 'https://schema.org',
               '@type': 'ItemList',
-              name: 'Ukay Salakay new arrivals',
+              name: 'Oldies Gallery new arrivals',
               itemListElement: seoProducts.map((product, index) => ({
                 '@type': 'ListItem',
                 position: index + 1,
@@ -596,7 +720,7 @@ const handleVideoEnded = () => {
                   itemCondition: `https://schema.org/${product.condition.replace(/\s+/g, '')}Condition`,
                   brand: {
                     '@type': 'Brand',
-                    name: 'Ukay Salakay',
+                    name: 'Oldies Gallery',
                   },
                   offers: {
                     '@type': 'Offer',
